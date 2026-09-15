@@ -364,30 +364,28 @@
 
   <script>
     // ================================================================
-    // 🔧 API CONFIG — ใส่ URL ของ GAS Web App ที่นี่
+    // 🔧 API CONFIG — URL ของ GAS Web App
     // ================================================================
     const API_URL = 'https://script.google.com/macros/s/AKfycbyPsUhb_h9kqpqd7yOIjkzMxy89nq6B0TIbTqqvw1rwK1zWAHXW8qpkq2iSzO8BVE5b/exec';
 
     // ================================================================
-    // 📡 API Helper — เรียก GAS ผ่าน fetch
+    // 📡 API Helper — ใช้ URLSearchParams เพื่อไม่ให้ติด CORS
     // ================================================================
     async function callAPI(action, data = {}) {
-  // ใช้ URLSearchParams เพื่อหลีกเลี่ยง CORS preflight
-  const formData = new URLSearchParams();
-  formData.append('action', action);
-  formData.append('data', JSON.stringify(data || {}));
+      const formData = new URLSearchParams();
+      formData.append('action', action);
+      formData.append('data', JSON.stringify(data || {}));
 
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    body: formData
-    // ⚠️ ห้ามใส่ headers Content-Type เด็ดขาด!
-    // เบราว์เซอร์จะใส่ application/x-www-form-urlencoded ให้เอง
-  });
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        body: formData
+        // ⚠️ ห้ามใส่ headers เด็ดขาด! เบราว์เซอร์จะใส่ให้เอง
+      });
 
-  const result = await response.json();
-  if (!result.success) throw new Error(result.error || 'Unknown error');
-  return result.data;
-}
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error || 'Unknown error');
+      return result.data;
+    }
 
     // ================================================================
     // 🌐 Global State
