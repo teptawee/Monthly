@@ -1,0 +1,25 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Google Apps Script
+.clasprc.json
+.clasp.json
+
+# Dependencies
+node_modules/
+
+# Backup files
+*.bak
+*.tmp
