@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ระบบบันทึกและจัดการรายรับ-รายจ่าย</title>
+  <!-- Bootstrap CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- SweetAlert2 CSS CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      --navy-primary: #1e3a8a;
+      --navy-secondary: #2563eb;
+      --navy-dark: #0f172a;
+      --card-bg: #ffffff;
+      --card-border: #cbd5e1;
+      --text-main: #1e293b;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      background-attachment: fixed;
+      min-height: 100vh;
+      font-family: 'Sarabun', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text-main);
+      overflow-x: hidden;
+    }
+
+    h2.drop-shadow {
+      color: var(--navy-dark);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .glass-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-top: 4px solid var(--navy-primary);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      color: var(--text-main);
+      transition: all 0.2s ease;
+    }
+
+    .glass-card:hover {
+      border-color: var(--navy-secondary);
+      box-shadow: 0 10px 15px -3px rgba(30, 58, 138, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .glass-card .card-header {
+      background: #f8fafc !important;
+      border-bottom: 1px solid #e2e8f0;
+      color: var(--navy-primary);
+      font-weight: 700;
+    }
+
+    /* ปรับแต่ง Input และ Select ให้พอดีตัวอักษร */
+    .form-control, .form-select {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 6px !important;
+      color: var(--text-main) !important;
+      font-weight: 500;
+      padding: 0.375rem 0.6rem !important;
+      font-size: 0.9rem !important;
+    }
+
+    .form-label {
+      font-size: 0.8rem !important;
+      font-weight: 600;
+      margin-bottom: 0.2rem !important;
+      white-space: nowrap;
+    }
+
+    .btn {
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .btn-success {
+      background: var(--navy-primary) !important;
+      border-color: var(--navy-primary) !important;
+      color: #fff !important;
+    }
+
+    .nav-pills .nav-link {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: var(--text-main);
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 10px 20px;
+    }
+
+    .nav-pills .nav-link.active {
+      background: var(--navy-primary) !important;
+      color: #fff !important;
+    }
+
+    /* ปรับขนาดตารางให้กระชับพอดีข้อความ */
+    .table {
+      color: var(--text-main) !important;
+      border-color: #e2e8f0 !important;
+    }
+
+    .table th, .table td {
+      padding: 0.5rem 0.6rem !important;
+      font-size: 0.88rem !important;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    .table .btn-sm {
+      padding: 0.15rem 0.4rem !important;
+      font-size: 0.75rem !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container py-4">
+    <h2 class="mb-4 text-center fw-bold drop-shadow"><i class="fas fa-chart-line text-primary me-2"></i> ระบบบันทึกและจัดการรายรับ-รายจ่าย</h2>
+    
+    <!-- เมนูเปลี่ยนแท็บ -->
+    <ul class="nav nav-pills mb-4 justify-content-center gap-2" id="pills-tab" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active fw-bold" id="pills-dashboard-tab" data-bs-toggle="pill" data-bs-target="#pills-dashboard" type="button" role="tab"><i class="fas fa-chart-pie me-2"></i>Dashboard ภาพรวม</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link fw-bold" id="pills-manage-tab" data-bs-toggle="pill" data-bs-target="#pills-manage" type="button" role="tab"><i class="fas fa-receipt me-2"></i>จัดการรายจ่าย</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link fw-bold" id="pills-income-tab" data-bs-toggle="pill" data-bs-target="#pills-income" type="button" role="tab"><i class="fas fa-hand-holding-usd me-2"></i>จัดการรายรับ</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="pills-tabContent">
+      
+      <!-- ================= แท็บที่ 1: Dashboard ภาพรวม ================= -->
+      <div class="tab-pane fade show active" id="pills-dashboard" role="tabpanel">
+        
+        <div class="row mb-4">
+          <div class="col-md-6 mb-2">
+            <div class="card glass-card h-100">
+              <div class="card-body d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-database text-primary me-2"></i>ตั้งค่าโครงสร้างระบบ (SetupConfig)</span>
+                <button class="btn btn-warning btn-sm fw-bold text-white" onclick="runSetup()"><i class="fas fa-cogs me-1"></i> รัน Setup</button>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-2">
+            <div class="card glass-card h-100">
+              <div class="card-body d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-satellite-dish text-primary me-2"></i>ระบบแจ้งเตือนเมลออโต้</span>
+                <button class="btn btn-light btn-sm fw-bold" onclick="setupTrigger()"><i class="fas fa-clock me-1"></i> เปิดออโต้</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 📊 Dashboard Cards สรุปยอดเงิน -->
+        <div class="row mb-4">
+          <div class="col-md-3 mb-3">
+            <div class="card glass-card" style="border-top-color: #16a34a;">
+              <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="card-title text-muted text-uppercase small fw-bold mb-1">รายรับรวม</h6>
+                  <h4 id="dashIncome" class="fw-bold mb-0 text-success">0.00 บาท</h4>
+                </div>
+                <div class="fs-1 text-success opacity-50 ms-3"><i class="fas fa-arrow-down"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card glass-card" style="border-top-color: #dc2626;">
+              <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="card-title text-muted text-uppercase small fw-bold mb-1">รายจ่ายรวม</h6>
+                  <h4 id="dashExpense" class="fw-bold mb-0 text-danger">0.00 บาท</h4>
+                </div>
+                <div class="fs-1 text-danger opacity-50 ms-3"><i class="fas fa-arrow-up"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card glass-card" style="border-top-color: #2563eb;">
+              <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="card-title text-muted text-uppercase small fw-bold mb-1">คงเหลือสุทธิ</h6>
+                  <h4 id="dashNet" class="fw-bold mb-0 text-primary">0.00 บาท</h4>
+                </div>
+                <div class="fs-1 text-primary opacity-50 ms-3"><i class="fas fa-wallet"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card glass-card" style="border-top-color: #d97706;">
+              <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="card-title text-muted text-uppercase small fw-bold mb-1">รายจ่ายรอชำระ</h6>
+                  <h4 id="dashPending" class="fw-bold mb-0 text-warning">0.00 บาท</h4>
+                </div>
+                <div class="fs-1 text-warning opacity-50 ms-3"><i class="fas fa-hourglass-half"></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 📈 กราฟแสดงผล Dashboard -->
+        <div class="row">
+          <div class="col-lg-4 mb-4">
+            <div class="card glass-card h-100">
+              <div class="card-header"><h6 class="mb-0"><i class="fas fa-balance-scale me-2"></i>เปรียบเทียบ รายรับ vs รายจ่าย</h6></div>
+              <div class="card-body d-flex justify-content-center align-items-center" style="position: relative; height: 260px;">
+                <canvas id="incVsExpChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4 mb-4">
+            <div class="card glass-card h-100">
+              <div class="card-header"><h6 class="mb-0"><i class="fas fa-tasks me-2"></i>สถานะรายการจ่าย (จ่ายแล้ว / รอจ่าย)</h6></div>
+              <div class="card-body d-flex justify-content-center align-items-center" style="position: relative; height: 260px;">
+                <canvas id="statusChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4 mb-4">
+            <div class="card glass-card h-100">
+              <div class="card-header"><h6 class="mb-0"><i class="fas fa-tags me-2"></i>สัดส่วนค่าใช้จ่ายตามหมวดหมู่</h6></div>
+              <div class="card-body d-flex justify-content-center align-items-center" style="position: relative; height: 260px;">
+                <canvas id="categoryChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ================= แท็บที่ 2: จัดการรายจ่าย ================= -->
+      <div class="tab-pane fade" id="pills-manage" role="tabpanel">
+        <div class="card glass-card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0" id="formTitle"><i class="fas fa-plus-circle me-2"></i>บันทึกรายการรายจ่ายใหม่</h5>
+          </div>
+          <div class="card-body">
+            <form id="expenseForm">
+              <input type="hidden" id="expenseId">
+              <div class="row g-2 align-items-end">
+                
+                <div class="col-6 col-md-2" style="max-width: 150px;">
+                  <label class="form-label text-muted">วันที่</label>
+                  <input type="date" class="form-control" id="expenseDate" required>
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label text-muted">ชื่อรายการ (เลือก/พิมพ์เพิ่มใหม่)</label>
+                  <input type="text" class="form-control" id="expenseName" list="expenseOptions" placeholder="เลือก/พิมพ์รายการ..." required autocomplete="off" onchange="autofillExpenseInfo()">
+                  <datalist id="expenseOptions"></datalist>
+                </div>
+
+                <div class="col-12 col-md-3">
+                  <label class="form-label text-muted">หมวดหมู่</label>
+                  <select class="form-select" id="expenseCategory">
+                    <option value="ค่าที่พักและสาธารณูปโภค">ค่าที่พักและสาธารณูปโภค</option>
+                    <option value="ค่าโทรศัพท์และอินเทอร์เน็ต">ค่าโทรศัพท์และอินเทอร์เน็ต</option>
+                    <option value="ค่าบัตรเครดิตและผ่อนชำระ">ค่าบัตรเครดิตและผ่อนชำระ</option>
+                    <option value="ครอบครัวและเงินออม">ครอบครัวและเงินออม</option>
+                    <option value="ค่าใช้จ่ายส่วนตัว / ช้อปปิ้ง">ค่าใช้จ่ายส่วนตัว / ช้อปปิ้ง</option>
+                    <option value="ทั่วไป" selected>ทั่วไป</option>
+                  </select>
+                </div>
+
+                <div class="col-6 col-md-2" style="max-width: 140px;">
+                  <label class="form-label text-muted">จำนวนเงิน (บาท)</label>
+                  <input type="number" step="any" class="form-control text-end" id="expenseAmount" placeholder="0.00" required>
+                </div>
+
+                <div class="col-6 col-md-1" style="min-width: 105px;">
+                  <label class="form-label text-muted">สถานะ</label>
+                  <select class="form-select" id="expenseStatus">
+                    <option value="รอจ่าย">รอจ่าย</option>
+                    <option value="จ่ายแล้ว">จ่ายแล้ว</option>
+                  </select>
+                </div>
+
+                <div class="col-12 col-md-auto ms-auto d-flex gap-1 mt-2 mt-md-0">
+                  <button type="button" class="btn btn-secondary btn-sm fw-bold" onclick="resetExpenseForm()" id="cancelBtn" style="display:none;">ยกเลิก</button>
+                  <button type="submit" class="btn btn-success btn-sm fw-bold px-3" id="saveBtn"><i class="fas fa-save me-1"></i>บันทึก</button>
+                </div>
+
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-lg-6 mb-4">
+            <div class="card glass-card" style="border-top-color: #d97706;">
+              <div class="card-header bg-light text-warning">
+                <h5 class="mb-0"><i class="fas fa-clock me-2"></i>รายการที่ยังไม่ได้จ่าย (รอเคลียร์)</h5>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover align-middle">
+                    <thead>
+                      <tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th>จำนวนเงิน</th><th>จัดการ</th></tr>
+                    </thead>
+                    <tbody id="pendingTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6 mb-4">
+            <div class="card glass-card" style="border-top-color: #16a34a;">
+              <div class="card-header bg-light text-success">
+                <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>รายการที่จ่ายแล้ว</h5>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover align-middle">
+                    <thead>
+                      <tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th>จำนวนเงิน</th><th>จัดการ</th></tr>
+                    </thead>
+                    <tbody id="paidTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= แท็บที่ 3: จัดการรายรับ ================= -->
+      <div class="tab-pane fade" id="pills-income" role="tabpanel">
+        
+        <div class="card glass-card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0" id="incomeFormTitle"><i class="fas fa-plus-circle me-2"></i>บันทึกรายรับใหม่</h5>
+          </div>
+          <div class="card-body">
+            <form id="incomeForm">
+              <input type="hidden" id="incomeId">
+              <div class="row g-2 align-items-end">
+                
+                <div class="col-6 col-md-2" style="max-width: 150px;">
+                  <label class="form-label text-muted">วันที่</label>
+                  <input type="date" class="form-control" id="incomeDate" required>
+                </div>
+
+                <div class="col-12 col-md-5">
+                  <label class="form-label text-muted">รายการ / ที่มารายรับ (เลือก/พิมพ์เพิ่มใหม่)</label>
+                  <input type="text" class="form-control" id="incomeSource" list="incomeOptions" placeholder="เลือก/พิมพ์ที่มารายรับ..." required autocomplete="off">
+                  <datalist id="incomeOptions"></datalist>
+                </div>
+
+                <div class="col-6 col-md-2" style="max-width: 150px;">
+                  <label class="form-label text-muted">จำนวนเงิน (บาท)</label>
+                  <input type="number" step="any" class="form-control text-end" id="incomeAmount" placeholder="0.00" required>
+                </div>
+
+                <div class="col-12 col-md-auto ms-auto d-flex gap-1 mt-2 mt-md-0">
+                  <button type="button" class="btn btn-secondary btn-sm fw-bold" onclick="resetIncomeForm()" id="cancelIncomeBtn" style="display:none;">ยกเลิก</button>
+                  <button type="submit" class="btn btn-success btn-sm fw-bold px-3" id="saveIncomeBtn"><i class="fas fa-save me-1"></i>บันทึกรายรับ</button>
+                </div>
+
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="card glass-card">
+          <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>ประวัติรายการรายรับ</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-striped table-hover align-middle">
+                <thead>
+                  <tr><th>วันที่</th><th>รายการ / ที่มา</th><th>จำนวนเงิน</th><th>จัดการ</th></tr>
+                </thead>
+                <tbody id="incomeTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    var setupItemsData = [];
+    var globalExpenses = [];
+    var globalIncomes = [];
+
+    var incVsExpChartInstance = null;
+    var statusChartInstance = null;
+    var categoryChartInstance = null;
+
+    window.onload = function() {
+      document.getElementById('expenseDate').valueAsDate = new Date();
+      document.getElementById('incomeDate').valueAsDate = new Date();
+      loadSetupItems();
+      loadIncomeOptions();
+      loadAllData();
+    };
+
+    function loadAllData() {
+      loadExpenses();
+      loadIncomes();
+    }
+
+    function runSetup() {
+      Swal.fire({ title: 'กำลังตั้งค่าระบบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+      google.script.run
+        .withSuccessHandler(function(msg) {
+          Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: msg, timer: 2000, showConfirmButton: false });
+          loadSetupItems();
+          loadIncomeOptions();
+          loadAllData();
+        })
+        .setupSystem();
+    }
+
+    function setupTrigger() {
+      google.script.run
+        .withSuccessHandler(function(msg) { Swal.fire({ icon: 'success', title: 'ตั้งค่าสำเร็จ', text: msg }); })
+        .createMonthlyTrigger();
+    }
+
+    function loadSetupItems() {
+      google.script.run
+        .withSuccessHandler(function(data) {
+          setupItemsData = data || [];
+          var datalist = document.getElementById('expenseOptions');
+          datalist.innerHTML = '';
+          setupItemsData.forEach(function(item) {
+            var opt = document.createElement('option');
+            opt.value = item[0];
+            datalist.appendChild(opt);
+          });
+        })
+        .getSetupItems();
+    }
+
+    function loadIncomeOptions() {
+      google.script.run
+        .withSuccessHandler(function(options) {
+          var datalist = document.getElementById('incomeOptions');
+          datalist.innerHTML = '';
+          (options || []).forEach(function(opt) {
+            var option = document.createElement('option');
+            option.value = opt;
+            datalist.appendChild(option);
+          });
+        })
+        .getIncomeSetupItems();
+    }
+
+    function autofillExpenseInfo() {
+      var selectedName = document.getElementById('expenseName').value;
+      var found = setupItemsData.find(item => item[0].toString().trim().toLowerCase() === selectedName.trim().toLowerCase());
+      if (found) {
+        if (found[1]) document.getElementById('expenseCategory').value = found[1];
+        if (found[2] !== undefined && found[2] !== "") document.getElementById('expenseAmount').value = found[2];
+      }
+    }
+
+    function updateDashboardUI() {
+      var totalInc = 0;
+      var totalExp = 0;
+      var paidExp = 0;
+      var pendingExp = 0;
+      var categoryMap = {};
+
+      globalIncomes.forEach(item => { totalInc += Number(item.amount) || 0; });
+
+      globalExpenses.forEach(item => {
+        var amt = Number(item.amount) || 0;
+        totalExp += amt;
+        if (item.status === 'จ่ายแล้ว') {
+          paidExp += amt;
+        } else {
+          pendingExp += amt;
+        }
+
+        var cat = item.category || 'ทั่วไป';
+        categoryMap[cat] = (categoryMap[cat] || 0) + amt;
+      });
+
+      var net = totalInc - totalExp;
+
+      document.getElementById('dashIncome').innerText = totalInc.toLocaleString() + ' บาท';
+      document.getElementById('dashExpense').innerText = totalExp.toLocaleString() + ' บาท';
+      document.getElementById('dashPending').innerText = pendingExp.toLocaleString() + ' บาท';
+
+      var netEl = document.getElementById('dashNet');
+      netEl.innerText = net.toLocaleString() + ' บาท';
+      netEl.className = net < 0 ? 'fw-bold mb-0 text-danger' : 'fw-bold mb-0 text-primary';
+
+      renderCharts(totalInc, totalExp, paidExp, pendingExp, categoryMap);
+    }
+
+    function renderCharts(incVal, expVal, paidVal, pendingVal, categoryMap) {
+      var ctx1 = document.getElementById('incVsExpChart').getContext('2d');
+      if (incVsExpChartInstance) incVsExpChartInstance.destroy();
+      incVsExpChartInstance = new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+          labels: ['รายรับรวม', 'รายจ่ายรวม'],
+          datasets: [{ data: [incVal, expVal], backgroundColor: ['#16a34a', '#dc2626'] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      });
+
+      var ctx2 = document.getElementById('statusChart').getContext('2d');
+      if (statusChartInstance) statusChartInstance.destroy();
+      statusChartInstance = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: ['จ่ายแล้ว', 'รอจ่าย'],
+          datasets: [{ data: [paidVal, pendingVal], backgroundColor: ['#2563eb', '#d97706'] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      });
+
+      var ctx3 = document.getElementById('categoryChart').getContext('2d');
+      if (categoryChartInstance) categoryChartInstance.destroy();
+      categoryChartInstance = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(categoryMap),
+          datasets: [{ label: 'ยอดเงิน (บาท)', data: Object.values(categoryMap), backgroundColor: '#1e3a8a' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+    }
+
+    document.getElementById('expenseForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var item = {
+        id: document.getElementById('expenseId').value,
+        date: document.getElementById('expenseDate').value,
+        name: document.getElementById('expenseName').value,
+        category: document.getElementById('expenseCategory').value,
+        amount: document.getElementById('expenseAmount').value,
+        status: document.getElementById('expenseStatus').value
+      };
+
+      Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+      google.script.run
+        .withSuccessHandler(function(msg) {
+          Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: msg, timer: 1500, showConfirmButton: false });
+          resetExpenseForm();
+          loadSetupItems();
+          loadExpenses();
+        })
+        .withFailureHandler(function(err) { Swal.fire({ title: 'เกิดข้อผิดพลาด', text: err.message, icon: 'error' }); })
+        .saveExpense(item);
+    });
+
+    function loadExpenses() {
+      google.script.run
+        .withSuccessHandler(function(expenses) {
+          globalExpenses = expenses || [];
+          var pendingTbody = document.getElementById('pendingTableBody');
+          var paidTbody = document.getElementById('paidTableBody');
+          pendingTbody.innerHTML = '';
+          paidTbody.innerHTML = '';
+
+          if (globalExpenses.length === 0) {
+            pendingTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">ไม่มีรายการ</td></tr>';
+            paidTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">ไม่มีรายการ</td></tr>';
+          } else {
+            globalExpenses.forEach(function(item) {
+              var amount = Number(item.amount) || 0;
+              var tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td>${item.date}</td>
+                <td>${item.name}</td>
+                <td><span class="badge bg-light text-primary border">${item.category || 'ทั่วไป'}</span></td>
+                <td>${amount.toLocaleString()} บาท</td>
+                <td>
+                  <button class="btn btn-sm btn-warning text-white me-1" onclick="editExpense('${item.id}', '${item.date}', '${item.name}', '${item.category || 'ทั่วไป'}', ${amount}, '${item.status}')"><i class="fas fa-edit"></i></button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteExpenseItem('${item.id}')"><i class="fas fa-trash"></i></button>
+                </td>
+              `;
+              if (item.status === 'จ่ายแล้ว') paidTbody.appendChild(tr);
+              else pendingTbody.appendChild(tr);
+            });
+          }
+
+          updateDashboardUI();
+        })
+        .getExpenses();
+    }
+
+    document.getElementById('incomeForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var item = {
+        id: document.getElementById('incomeId').value,
+        date: document.getElementById('incomeDate').value,
+        source: document.getElementById('incomeSource').value,
+        amount: document.getElementById('incomeAmount').value
+      };
+
+      Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+      google.script.run
+        .withSuccessHandler(function(msg) {
+          Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: msg, timer: 1500, showConfirmButton: false });
+          resetIncomeForm();
+          loadIncomeOptions();
+          loadIncomes();
+        })
+        .withFailureHandler(function(err) { Swal.fire({ title: 'เกิดข้อผิดพลาด', text: err.message, icon: 'error' }); })
+        .saveIncome(item);
+    });
+
+    function loadIncomes() {
+      google.script.run
+        .withSuccessHandler(function(incomes) {
+          globalIncomes = incomes || [];
+          var tbody = document.getElementById('incomeTableBody');
+          tbody.innerHTML = '';
+
+          if (globalIncomes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">ยังไม่มีรายการรายรับ</td></tr>';
+          } else {
+            globalIncomes.forEach(function(item) {
+              var amount = Number(item.amount) || 0;
+              var tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td>${item.date}</td>
+                <td class="fw-bold">${item.source}</td>
+                <td class="text-success fw-bold">+${amount.toLocaleString()} บาท</td>
+                <td>
+                  <button class="btn btn-sm btn-warning text-white me-1" onclick="editIncome('${item.id}', '${item.date}', '${item.source}', ${amount})"><i class="fas fa-edit"></i></button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteIncomeItem('${item.id}')"><i class="fas fa-trash"></i></button>
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+
+          updateDashboardUI();
+        })
+        .getIncomes();
+    }
+
+    function resetExpenseForm() {
+      document.getElementById('expenseId').value = '';
+      document.getElementById('expenseForm').reset();
+      document.getElementById('expenseDate').valueAsDate = new Date();
+      document.getElementById('saveBtn').innerHTML = '<i class="fas fa-save me-1"></i>บันทึก';
+      document.getElementById('cancelBtn').style.display = 'none';
+    }
+
+    function resetIncomeForm() {
+      document.getElementById('incomeId').value = '';
+      document.getElementById('incomeForm').reset();
+      document.getElementById('incomeDate').valueAsDate = new Date();
+      document.getElementById('saveIncomeBtn').innerHTML = '<i class="fas fa-save me-1"></i>บันทึกรายรับ';
+      document.getElementById('cancelIncomeBtn').style.display = 'none';
+    }
+
+    function editExpense(id, date, name, category, amount, status) {
+      document.getElementById('expenseId').value = id;
+      document.getElementById('expenseDate').value = date;
+      document.getElementById('expenseName').value = name;
+      document.getElementById('expenseCategory').value = category;
+      document.getElementById('expenseAmount').value = amount;
+      document.getElementById('expenseStatus').value = status;
+      document.getElementById('saveBtn').innerHTML = '<i class="fas fa-save me-1"></i>อัปเดต';
+      document.getElementById('cancelBtn').style.display = 'block';
+      
+      new bootstrap.Tab(document.getElementById('pills-manage-tab')).show();
+    }
+
+    function editIncome(id, date, source, amount) {
+      document.getElementById('incomeId').value = id;
+      document.getElementById('incomeDate').value = date;
+      document.getElementById('incomeSource').value = source;
+      document.getElementById('incomeAmount').value = amount;
+      document.getElementById('saveIncomeBtn').innerHTML = '<i class="fas fa-save me-1"></i>อัปเดต';
+      document.getElementById('cancelIncomeBtn').style.display = 'block';
+    }
+
+    function deleteExpenseItem(id) {
+      if (confirm("ต้องการลบรายการรายจ่ายนี้ใช่หรือไม่?")) {
+        google.script.run.withSuccessHandler(function() { loadExpenses(); }).deleteExpense(id);
+      }
+    }
+
+    function deleteIncomeItem(id) {
+      if (confirm("ต้องการลบรายการรายรับนี้ใช่หรือไม่?")) {
+        google.script.run.withSuccessHandler(function() { loadIncomes(); }).deleteIncome(id);
+      }
+    }
+  </script>
+</body>
+</html>
